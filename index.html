@@ -89,6 +89,11 @@
         .btn-toggle { background-color: #e67e22; }
         .btn-labels { background-color: #9b59b6; }
         .btn-fullscreen { background-color: #2ecc71; }
+        .btn-count { background-color: #34495e; }
+        .btn-custom { background-color: #c0392b; }
+        .btn-colors { background-color: #95a5a6; }
+        .btn-game { background-color: #d35400; }
+        .btn-nav { background-color: #2980b9; padding: 8px 16px; font-size: 12px; }
 
         /* Modal Styles */
         .modal {
@@ -201,6 +206,103 @@
             padding: 20px;
         }
 
+        /* Notification styles */
+        .notification {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #e74c3c;
+            color: white;
+            padding: 15px 30px;
+            border-radius: 5px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            z-index: 2000;
+            font-size: 16px;
+            font-weight: bold;
+            display: none;
+            animation: slideDown 0.3s ease;
+        }
+
+        .notification.show {
+            display: block;
+        }
+
+        @keyframes slideDown {
+            from {
+                top: -50px;
+                opacity: 0;
+            }
+            to {
+                top: 20px;
+                opacity: 1;
+            }
+        }
+
+        /* Input field styles */
+        input[type="text"].pattern-input {
+            width: 100%;
+            padding: 12px;
+            font-size: 16px;
+            font-family: monospace;
+            border: 2px solid #3498db;
+            border-radius: 5px;
+            margin: 15px 0;
+            text-align: center;
+            text-transform: lowercase;
+        }
+
+        input[type="text"].pattern-input:focus {
+            outline: none;
+            border-color: #2ecc71;
+        }
+
+        .syntax-help {
+            background-color: #ecf0f1;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 10px 0;
+            font-size: 12px;
+            color: #2c3e50;
+        }
+
+        .syntax-help code {
+            background-color: #34495e;
+            color: white;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: monospace;
+        }
+
+        /* Game mode styles */
+        .game-info {
+            display: none;
+            text-align: center;
+            margin: 15px 0;
+            padding: 15px;
+            background-color: #fff3cd;
+            border: 2px solid #d35400;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            color: #856404;
+        }
+
+        .game-info.show {
+            display: block;
+        }
+
+        .game-nav {
+            display: none;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .game-nav.show {
+            display: flex;
+        }
+
         @media (max-width: 768px) {
             button {
                 font-size: 12px;
@@ -219,16 +321,30 @@
 
         <canvas id="staffCanvas" width="900" height="350"></canvas>
 
+        <!-- Game Mode Info -->
+        <div id="gameInfo" class="game-info"></div>
+
+        <!-- Game Mode Navigation -->
+        <div id="gameNav" class="game-nav">
+            <button class="btn-save" onclick="markSafe()">Safe</button>
+            <button class="btn-first" onclick="markPoison()">This is the poison pattern!</button>
+            <button class="btn-cancel" onclick="exitGameMode()">Exit Game</button>
+        </div>
+
         <div class="button-container">
             <div class="button-row">
                 <button class="btn-new" onclick="generatePattern()">New Pattern</button>
                 <button class="btn-play" onclick="playPattern()">Play Pattern</button>
+                <button class="btn-game" onclick="openPoisonMotiveModal()">Poison Motive</button>
                 <button class="btn-select" onclick="openNoteSelection()">Select Notes</button>
                 <button class="btn-first" onclick="openFirstNoteSelection()">First Note</button>
+                <button class="btn-count" id="noteCountBtn" onclick="toggleNoteCount()">4 Notes</button>
             </div>
             <div class="button-row">
                 <button class="btn-toggle" id="toggleNamesBtn" onclick="toggleNoteNames()">Hide Names</button>
                 <button class="btn-labels" onclick="openLabelSelection()">Select Labels</button>
+                <button class="btn-colors" id="toggleColorsBtn" onclick="toggleColors()">Hide Colors</button>
+                <button class="btn-custom" onclick="openCustomPattern()">Custom Pattern</button>
                 <button class="btn-fullscreen" onclick="toggleFullscreen()">Fullscreen</button>
             </div>
         </div>
@@ -284,6 +400,86 @@
         </div>
     </div>
 
+    <!-- Custom Pattern Modal -->
+    <div id="customPatternModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">Enter Custom Pattern</div>
+            <div class="modal-description">Type your solfege pattern using the shorthand notation below:</div>
+
+            <div class="syntax-help">
+                <strong>Syntax:</strong><br>
+                <code>d</code>=do, <code>r</code>=re, <code>m</code>=mi, <code>f</code>=fa, <code>s</code>=so, <code>l</code>=la, <code>t</code>=ti<br>
+                Add <code>,</code> for low octave (e.g., <code>s,</code>=so,)<br>
+                Add <code>'</code> for high octave (e.g., <code>d'</code>=do')<br><br>
+                <strong>Example:</strong> <code>ds,dd'</code> = do, so,, do, do'
+            </div>
+
+            <div class="checkbox-item" style="justify-content: center; margin: 10px 0;">
+                <input type="checkbox" id="hideInputCheckbox" onchange="toggleInputVisibility()">
+                <label for="hideInputCheckbox">Hide input (for teaching)</label>
+            </div>
+
+            <input type="text" id="customPatternInput" class="pattern-input" placeholder="e.g., dsmd or s,dms" maxlength="20">
+
+            <div class="modal-buttons">
+                <button class="btn-save" onclick="applyCustomPattern()">Apply</button>
+                <button class="btn-cancel" onclick="closeModal('customPatternModal')">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Poison Motive Modal -->
+    <div id="poisonMotiveModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">Poison Motive Game</div>
+            <div class="modal-description">Enter the "poison" pattern that students should identify:</div>
+
+            <div class="syntax-help">
+                <strong>Syntax:</strong><br>
+                <code>d</code>=do, <code>r</code>=re, <code>m</code>=mi, <code>f</code>=fa, <code>s</code>=so, <code>l</code>=la, <code>t</code>=ti<br>
+                Add <code>,</code> for low octave (e.g., <code>s,</code>=so,)<br>
+                Add <code>'</code> for high octave (e.g., <code>d'</code>=do')<br><br>
+                <strong>Example:</strong> <code>smd</code> = so, mi, do
+            </div>
+
+            <div class="checkbox-item" style="justify-content: center; margin: 10px 0;">
+                <input type="checkbox" id="hidePoisonInputCheckbox" onchange="togglePoisonInputVisibility()">
+                <label for="hidePoisonInputCheckbox">Hide input (for teaching)</label>
+            </div>
+
+            <input type="text" id="poisonPatternInput" class="pattern-input" placeholder="e.g., smd or drm" maxlength="20">
+
+            <div class="checkbox-item" style="justify-content: center; margin: 15px 0;">
+                <input type="checkbox" id="endWithMiReDoCheckbox" checked>
+                <label for="endWithMiReDoCheckbox">End with "mi re do" pattern</label>
+            </div>
+
+            <div class="modal-description" style="margin-top: 10px;">
+                The game will generate 10 patterns with 3 hidden poison motives.
+            </div>
+
+            <div class="modal-buttons">
+                <button class="btn-save" onclick="startPoisonMotiveGame()">Start Game</button>
+                <button class="btn-cancel" onclick="closeModal('poisonMotiveModal')">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Game Score Modal -->
+    <div id="gameScoreModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">Game Complete!</div>
+            <div id="scoreDisplay" style="text-align: center; margin: 30px 0; font-size: 24px;">
+            </div>
+            <div class="modal-buttons">
+                <button class="btn-save" onclick="closeScoreAndExit()">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification -->
+    <div id="notification" class="notification"></div>
+
     <script>
         // Audio context for Web Audio API
         let audioContext = null;
@@ -313,6 +509,16 @@
         let showNoteNames = true;
         let isFullscreen = false;
         let notePositions = [];
+        let numberOfNotes = 4; // Can be 3 or 4
+        let showColors = true; // Toggle for colored vs grey notes
+
+        // Poison Motive game mode variables
+        let isGameMode = false;
+        let gamePatterns = [];
+        let currentGameIndex = 0;
+        let poisonPattern = [];
+        let poisonPositions = []; // Track which patterns are poison
+        let mistakeCount = 0; // Track incorrect "Poison!" calls
 
         // Note colors
         const noteColors = {
@@ -337,6 +543,8 @@
                     if (data.enabledNotes) enabledNotes = data.enabledNotes;
                     if (data.firstNote !== undefined) firstNote = data.firstNote;
                     if (data.showLabels) showLabels = data.showLabels;
+                    if (data.numberOfNotes !== undefined) numberOfNotes = data.numberOfNotes;
+                    if (data.showColors !== undefined) showColors = data.showColors;
                 }
             } catch (e) {
                 console.error('Error loading settings:', e);
@@ -349,7 +557,9 @@
                 const data = {
                     enabledNotes: enabledNotes,
                     firstNote: firstNote,
-                    showLabels: showLabels
+                    showLabels: showLabels,
+                    numberOfNotes: numberOfNotes,
+                    showColors: showColors
                 };
                 localStorage.setItem('solfegeSettings', JSON.stringify(data));
             } catch (e) {
@@ -372,11 +582,11 @@
             // If first note is set and enabled, use it
             if (firstNote && enabledList.includes(firstNote)) {
                 currentPattern.push(firstNote);
-                for (let i = 0; i < 3; i++) {
+                for (let i = 0; i < numberOfNotes - 1; i++) {
                     currentPattern.push(enabledList[Math.floor(Math.random() * enabledList.length)]);
                 }
             } else {
-                for (let i = 0; i < 4; i++) {
+                for (let i = 0; i < numberOfNotes; i++) {
                     currentPattern.push(enabledList[Math.floor(Math.random() * enabledList.length)]);
                 }
             }
@@ -486,7 +696,7 @@
 
             Object.entries(staffConfig.positions).forEach(([note, y]) => {
                 if (enabledNotes[note] && showLabels[note]) {
-                    ctx.fillStyle = noteColors[note] || '#2c3e50';
+                    ctx.fillStyle = showColors ? (noteColors[note] || '#2c3e50') : '#7f8c8d';
                     const label = note.includes(',') || note.includes("'") ? note :
                                  note.charAt(0).toUpperCase() + note.slice(1);
                     ctx.fillText(label, staffLeft - 60, y);
@@ -494,13 +704,13 @@
             });
 
             // Draw notes
-            const noteSpacing = staffLength / 5;
+            const noteSpacing = staffLength / (numberOfNotes + 1);
             notePositions = [];
 
             currentPattern.forEach((note, i) => {
                 const xPos = staffLeft + noteSpacing * (i + 1);
                 const yPos = staffConfig.positions[note] || canvasHeight / 2;
-                const color = noteColors[note] || '#2c3e50';
+                const color = showColors ? (noteColors[note] || '#2c3e50') : '#7f8c8d';
 
                 // Draw note circle
                 ctx.fillStyle = color;
@@ -575,6 +785,23 @@
             drawStaffAndNotes();
         }
 
+        // Toggle number of notes (3 or 4)
+        function toggleNoteCount() {
+            numberOfNotes = numberOfNotes === 4 ? 3 : 4;
+            document.getElementById('noteCountBtn').textContent = numberOfNotes + ' Notes';
+            saveSettings();
+            generatePattern();
+        }
+
+        // Toggle colors on/off
+        function toggleColors() {
+            showColors = !showColors;
+            document.getElementById('toggleColorsBtn').textContent =
+                showColors ? 'Hide Colors' : 'Show Colors';
+            saveSettings();
+            drawStaffAndNotes();
+        }
+
         // Toggle fullscreen
         function toggleFullscreen() {
             isFullscreen = !isFullscreen;
@@ -616,6 +843,356 @@
                 }
             });
         });
+
+        // Show notification
+        function showNotification(message, duration = 3000) {
+            const notification = document.getElementById('notification');
+            notification.textContent = message;
+            notification.classList.add('show');
+
+            setTimeout(() => {
+                notification.classList.remove('show');
+            }, duration);
+        }
+
+        // Parse custom pattern input
+        function parseCustomPattern(input) {
+            // Remove spaces and convert to lowercase
+            input = input.replace(/\s/g, '').toLowerCase();
+
+            if (!input) {
+                return null;
+            }
+
+            // Mapping from shorthand to full note names
+            const noteMap = {
+                'd': 'do',
+                'r': 're',
+                'm': 'mi',
+                'f': 'fa',
+                's': 'so',
+                'l': 'la',
+                't': 'ti'
+            };
+
+            const pattern = [];
+            let i = 0;
+
+            while (i < input.length) {
+                const char = input[i];
+
+                // Check if it's a valid note letter
+                if (noteMap[char]) {
+                    let noteName = noteMap[char];
+
+                    // Check for octave modifiers
+                    if (i + 1 < input.length) {
+                        if (input[i + 1] === ',') {
+                            noteName += ',';
+                            i++; // Skip the comma
+                        } else if (input[i + 1] === "'") {
+                            noteName += "'";
+                            i++; // Skip the apostrophe
+                        }
+                    }
+
+                    pattern.push(noteName);
+                } else {
+                    // Invalid character found
+                    return null;
+                }
+
+                i++;
+            }
+
+            return pattern.length > 0 ? pattern : null;
+        }
+
+        // Toggle input visibility
+        function toggleInputVisibility() {
+            const input = document.getElementById('customPatternInput');
+            const checkbox = document.getElementById('hideInputCheckbox');
+
+            if (checkbox.checked) {
+                input.type = 'password';
+            } else {
+                input.type = 'text';
+            }
+        }
+
+        // Open custom pattern modal
+        function openCustomPattern() {
+            document.getElementById('customPatternInput').value = '';
+            document.getElementById('customPatternInput').type = 'text';
+            document.getElementById('hideInputCheckbox').checked = false;
+            document.getElementById('customPatternModal').classList.add('show');
+            // Focus on input field
+            setTimeout(() => {
+                document.getElementById('customPatternInput').focus();
+            }, 100);
+        }
+
+        // Apply custom pattern
+        function applyCustomPattern() {
+            const input = document.getElementById('customPatternInput').value;
+            const parsed = parseCustomPattern(input);
+
+            if (!parsed) {
+                showNotification('Invalid pattern! Please use correct syntax (e.g., dsmd)');
+                closeModal('customPatternModal');
+                generatePattern();
+                return;
+            }
+
+            // Use last 4 notes if more than 4
+            let finalPattern = parsed;
+            if (parsed.length > 4) {
+                finalPattern = parsed.slice(-4);
+            }
+
+            // Validate all notes exist in our note list
+            const validNotes = Object.keys(enabledNotes);
+            const allValid = finalPattern.every(note => validNotes.includes(note));
+
+            if (!allValid) {
+                showNotification('Invalid notes in pattern! Please use valid solfege notes.');
+                closeModal('customPatternModal');
+                generatePattern();
+                return;
+            }
+
+            // Apply the pattern
+            currentPattern = finalPattern;
+            numberOfNotes = finalPattern.length;
+            document.getElementById('noteCountBtn').textContent = numberOfNotes + ' Notes';
+            saveSettings();
+
+            closeModal('customPatternModal');
+            drawStaffAndNotes();
+            showNotification('Pattern applied!', 2000);
+        }
+
+        // Handle Enter key in custom pattern input
+        document.addEventListener('DOMContentLoaded', () => {
+            const input = document.getElementById('customPatternInput');
+            if (input) {
+                input.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') {
+                        applyCustomPattern();
+                    }
+                });
+            }
+
+            const poisonInput = document.getElementById('poisonPatternInput');
+            if (poisonInput) {
+                poisonInput.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') {
+                        startPoisonMotiveGame();
+                    }
+                });
+            }
+        });
+
+        // Poison Motive Game Functions
+        function togglePoisonInputVisibility() {
+            const input = document.getElementById('poisonPatternInput');
+            const checkbox = document.getElementById('hidePoisonInputCheckbox');
+
+            if (checkbox.checked) {
+                input.type = 'password';
+            } else {
+                input.type = 'text';
+            }
+        }
+
+        function openPoisonMotiveModal() {
+            document.getElementById('poisonPatternInput').value = '';
+            document.getElementById('poisonPatternInput').type = 'text';
+            document.getElementById('hidePoisonInputCheckbox').checked = false;
+            document.getElementById('poisonMotiveModal').classList.add('show');
+            setTimeout(() => {
+                document.getElementById('poisonPatternInput').focus();
+            }, 100);
+        }
+
+        function startPoisonMotiveGame() {
+            const input = document.getElementById('poisonPatternInput').value;
+            const parsed = parseCustomPattern(input);
+
+            if (!parsed || parsed.length === 0) {
+                showNotification('Invalid poison pattern! Please use correct syntax.');
+                closeModal('poisonMotiveModal');
+                return;
+            }
+
+            // Validate all notes exist
+            const validNotes = Object.keys(enabledNotes);
+            const allValid = parsed.every(note => validNotes.includes(note));
+
+            if (!allValid) {
+                showNotification('Invalid notes in poison pattern!');
+                closeModal('poisonMotiveModal');
+                return;
+            }
+
+            // Store the poison pattern
+            poisonPattern = parsed;
+
+            // Generate 10 random patterns
+            const enabledList = Object.keys(enabledNotes).filter(note => enabledNotes[note]);
+            if (enabledList.length === 0) {
+                showNotification('Please enable some notes first!');
+                closeModal('poisonMotiveModal');
+                return;
+            }
+
+            gamePatterns = [];
+            for (let i = 0; i < 10; i++) {
+                const pattern = [];
+                const count = numberOfNotes;
+                for (let j = 0; j < count; j++) {
+                    pattern.push(enabledList[Math.floor(Math.random() * enabledList.length)]);
+                }
+                gamePatterns.push(pattern);
+            }
+
+            // Insert poison patterns at specific positions
+            poisonPositions = []; // Reset tracking
+
+            // First poison: positions 0-2 (randomly)
+            const firstPos = Math.floor(Math.random() * 3);
+            gamePatterns[firstPos] = [...poisonPattern];
+            poisonPositions.push(firstPos);
+
+            // Second poison: positions 3-7 (4th to 8th, randomly)
+            const secondPos = 3 + Math.floor(Math.random() * 5);
+            gamePatterns[secondPos] = [...poisonPattern];
+            poisonPositions.push(secondPos);
+
+            // Third poison: position 8 (second to last)
+            gamePatterns[8] = [...poisonPattern];
+            poisonPositions.push(8);
+
+            // Last pattern - optionally mi re do based on checkbox
+            const endWithMiReDo = document.getElementById('endWithMiReDoCheckbox').checked;
+            if (endWithMiReDo) {
+                gamePatterns[9] = ['mi', 're', 'do'];
+            }
+            // Otherwise gamePatterns[9] is already a random pattern from earlier
+
+            // Start game mode
+            isGameMode = true;
+            currentGameIndex = 0;
+            mistakeCount = 0; // Reset mistake counter
+            currentPattern = gamePatterns[0];
+
+            // Update UI
+            closeModal('poisonMotiveModal');
+            updateGameUI();
+            drawStaffAndNotes();
+            showNotification('Poison Motive game started! Find the poison patterns.', 3000);
+        }
+
+        function updateGameUI() {
+            const gameInfo = document.getElementById('gameInfo');
+            const gameNav = document.getElementById('gameNav');
+
+            if (isGameMode) {
+                gameInfo.textContent = `Pattern ${currentGameIndex + 1} of ${gamePatterns.length}`;
+                gameInfo.classList.add('show');
+                gameNav.classList.add('show');
+            } else {
+                gameInfo.classList.remove('show');
+                gameNav.classList.remove('show');
+            }
+        }
+
+        function markSafe() {
+            if (!isGameMode) return;
+
+            // Check if current pattern is actually poison
+            const isActuallyPoison = poisonPositions.includes(currentGameIndex);
+
+            if (isActuallyPoison) {
+                // They said it was safe but it was poison - you ate it!
+                mistakeCount++;
+            }
+
+            // Move to next pattern
+            if (currentGameIndex < gamePatterns.length - 1) {
+                currentGameIndex++;
+                currentPattern = gamePatterns[currentGameIndex];
+                updateGameUI();
+                drawStaffAndNotes();
+            } else {
+                // Game complete
+                showScoreScreen();
+            }
+        }
+
+        function markPoison() {
+            if (!isGameMode) return;
+
+            // Check if current pattern is actually poison
+            const isActuallyPoison = poisonPositions.includes(currentGameIndex);
+
+            if (!isActuallyPoison) {
+                // They said it was poison but it wasn't - you ate poison incorrectly!
+                mistakeCount++;
+            }
+            // If it IS actually poison, you dodged it - no mistake!
+
+            // Move to next pattern
+            if (currentGameIndex < gamePatterns.length - 1) {
+                currentGameIndex++;
+                currentPattern = gamePatterns[currentGameIndex];
+                updateGameUI();
+                drawStaffAndNotes();
+            } else {
+                // Game complete
+                showScoreScreen();
+            }
+        }
+
+        function showScoreScreen() {
+            const scoreDisplay = document.getElementById('scoreDisplay');
+
+            let message = `<strong>Poison Eaten: ${mistakeCount}</strong><br><br>`;
+
+            if (mistakeCount === 0) {
+                message += '<div style="color: #27ae60; font-size: 28px;">🎉 Perfect Score! 🎉</div><br>';
+                message += 'You dodged all the poison!';
+            } else if (mistakeCount === 1) {
+                message += '<div style="color: #f39c12; font-size: 22px;">Great job!</div><br>';
+                message += 'You only ate 1 piece of poison.';
+            } else if (mistakeCount <= 3) {
+                message += '<div style="color: #e67e22; font-size: 22px;">Good effort!</div><br>';
+                message += `You ate ${mistakeCount} pieces of poison.`;
+            } else {
+                message += '<div style="color: #e74c3c; font-size: 22px;">Keep practicing!</div><br>';
+                message += `You ate ${mistakeCount} pieces of poison.`;
+            }
+
+            scoreDisplay.innerHTML = message;
+            document.getElementById('gameScoreModal').classList.add('show');
+        }
+
+        function closeScoreAndExit() {
+            closeModal('gameScoreModal');
+            exitGameMode();
+        }
+
+        function exitGameMode() {
+            isGameMode = false;
+            gamePatterns = [];
+            currentGameIndex = 0;
+            poisonPattern = [];
+            poisonPositions = [];
+            mistakeCount = 0;
+            updateGameUI();
+            generatePattern();
+            showNotification('Game mode exited.', 2000);
+        }
 
         // Modal functions
         function openNoteSelection() {
@@ -764,6 +1341,8 @@
 
         // Initialize
         loadSettings();
+        document.getElementById('noteCountBtn').textContent = numberOfNotes + ' Notes';
+        document.getElementById('toggleColorsBtn').textContent = showColors ? 'Hide Colors' : 'Show Colors';
         generatePattern();
     </script>
 </body>
