@@ -1,0 +1,770 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Solfege Trainer - Extended Range</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background-color: white;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1000px;
+            width: 100%;
+        }
+
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+            margin-bottom: 20px;
+            font-size: 2em;
+        }
+
+        #staffCanvas {
+            display: block;
+            margin: 0 auto;
+            border: 3px solid #3498db;
+            border-radius: 5px;
+            background-color: white;
+            cursor: pointer;
+            max-width: 100%;
+            height: auto;
+        }
+
+        .button-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-top: 20px;
+            gap: 10px;
+        }
+
+        .button-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+        }
+
+        button {
+            font-family: Arial, sans-serif;
+            font-size: 14px;
+            font-weight: bold;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: transform 0.1s, box-shadow 0.1s;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+        }
+
+        button:active {
+            transform: translateY(0);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+        }
+
+        .btn-new { background-color: #3498db; }
+        .btn-play { background-color: #16a085; }
+        .btn-select { background-color: #8e44ad; }
+        .btn-first { background-color: #e74c3c; }
+        .btn-toggle { background-color: #e67e22; }
+        .btn-labels { background-color: #9b59b6; }
+        .btn-fullscreen { background-color: #2ecc71; }
+
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.show {
+            display: flex;
+        }
+
+        .modal-content {
+            background-color: white;
+            padding: 30px;
+            border-radius: 10px;
+            max-width: 400px;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+        }
+
+        .modal-header {
+            font-size: 20px;
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        .modal-description {
+            font-size: 12px;
+            color: #7f8c8d;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        .preset-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 15px;
+            justify-content: center;
+        }
+
+        .preset-btn {
+            font-size: 11px;
+            padding: 8px 12px;
+        }
+
+        .checkbox-list, .radio-list {
+            margin: 20px 0;
+        }
+
+        .checkbox-item, .radio-item {
+            display: flex;
+            align-items: center;
+            padding: 5px 0;
+            font-size: 14px;
+        }
+
+        .checkbox-item input, .radio-item input {
+            margin-right: 10px;
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+
+        .checkbox-item label, .radio-item label {
+            cursor: pointer;
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-top: 20px;
+        }
+
+        .btn-save {
+            background-color: #27ae60;
+            padding: 12px 35px;
+        }
+
+        .btn-cancel {
+            background-color: #95a5a6;
+            padding: 12px 25px;
+        }
+
+        /* Fullscreen styles */
+        .fullscreen-mode {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 999;
+            background-color: white;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        @media (max-width: 768px) {
+            button {
+                font-size: 12px;
+                padding: 10px 15px;
+            }
+
+            h1 {
+                font-size: 1.5em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container" id="mainContainer">
+        <h1>Solfege Trainer - Extended Range</h1>
+
+        <canvas id="staffCanvas" width="900" height="350"></canvas>
+
+        <div class="button-container">
+            <div class="button-row">
+                <button class="btn-new" onclick="generatePattern()">New Pattern</button>
+                <button class="btn-play" onclick="playPattern()">Play Pattern</button>
+                <button class="btn-select" onclick="openNoteSelection()">Select Notes</button>
+                <button class="btn-first" onclick="openFirstNoteSelection()">First Note</button>
+            </div>
+            <div class="button-row">
+                <button class="btn-toggle" id="toggleNamesBtn" onclick="toggleNoteNames()">Hide Names</button>
+                <button class="btn-labels" onclick="openLabelSelection()">Select Labels</button>
+                <button class="btn-fullscreen" onclick="toggleFullscreen()">Fullscreen</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Note Selection Modal -->
+    <div id="noteSelectionModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">Select Notes to Include</div>
+            <div class="modal-description">Presets:</div>
+            <div class="preset-buttons">
+                <button class="preset-btn btn-select" onclick="applyNotePreset(['so', 'mi', 'la'])">SML</button>
+                <button class="preset-btn btn-select" onclick="applyNotePreset(['so', 'mi', 'la', 're', 'do'])">SMLRD</button>
+                <button class="preset-btn btn-labels" onclick="applyNotePreset(['do', 're', 'mi', 'fa', 'so', 'la', 'ti', 'do\''])">Diatonic</button>
+                <button class="preset-btn btn-toggle" onclick="applyNotePreset(['do', 're', 'mi', 'so', 'la', 'la,', 'so,'])">Ext. Pent.</button>
+            </div>
+            <div class="checkbox-list" id="noteCheckboxes"></div>
+            <div class="modal-buttons">
+                <button class="btn-save" onclick="saveNoteSelection()">Save</button>
+                <button class="btn-cancel" onclick="closeModal('noteSelectionModal')">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- First Note Selection Modal -->
+    <div id="firstNoteModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">Select First Note</div>
+            <div class="modal-description">Choose which note should always be first in the pattern.<br>Select 'None' for random patterns.</div>
+            <div class="radio-list" id="firstNoteRadios"></div>
+            <div class="modal-buttons">
+                <button class="btn-save" onclick="saveFirstNote()">Save</button>
+                <button class="btn-cancel" onclick="closeModal('firstNoteModal')">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Label Selection Modal -->
+    <div id="labelSelectionModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">Select Labels to Show</div>
+            <div class="modal-description">Choose which note labels to display on the left side of the staff.<br><br>Quick Access:</div>
+            <div class="preset-buttons">
+                <button class="preset-btn btn-fullscreen" onclick="applyLabelPreset('so')">Label So</button>
+                <button class="preset-btn btn-first" onclick="applyLabelPreset('do')">Label Do</button>
+                <button class="preset-btn btn-new" onclick="applyLabelPresetAvailable()">Label Available Notes</button>
+            </div>
+            <div class="checkbox-list" id="labelCheckboxes"></div>
+            <div class="modal-buttons">
+                <button class="btn-save" onclick="saveLabelSelection()">Save</button>
+                <button class="btn-cancel" onclick="closeModal('labelSelectionModal')">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Audio context for Web Audio API
+        let audioContext = null;
+
+        // Initialize audio context on first user interaction
+        function initAudioContext() {
+            if (!audioContext) {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            }
+        }
+
+        // State
+        const noteOrder = ["do'", 'ti', 'la', 'so', 'fa', 'mi', 're', 'do', 'ti,', 'la,', 'so,'];
+
+        let enabledNotes = {
+            'so,': true, 'la,': true, 'ti,': true, 'do': true, 're': true,
+            'mi': true, 'fa': true, 'so': true, 'la': true, 'ti': true, "do'": true
+        };
+
+        let showLabels = {
+            'so,': true, 'la,': true, 'ti,': true, 'do': true, 're': true,
+            'mi': true, 'fa': true, 'so': true, 'la': true, 'ti': true, "do'": true
+        };
+
+        let firstNote = null;
+        let currentPattern = [];
+        let showNoteNames = true;
+        let isFullscreen = false;
+        let notePositions = [];
+
+        // Note colors
+        const noteColors = {
+            "do'": '#e74c3c', 'ti': '#c39bd3', 'la': '#9b59b6', 'so': '#27ae60',
+            'fa': '#2ecc71', 'mi': '#f1c40f', 're': '#e67e22', 'do': '#e74c3c',
+            'ti,': '#c39bd3', 'la,': '#9b59b6', 'so,': '#27ae60'
+        };
+
+        // Note frequencies (Hz)
+        const noteFrequencies = {
+            'so,': 196.00, 'la,': 220.00, 'ti,': 246.94,
+            'do': 261.63, 're': 293.66, 'mi': 329.63, 'fa': 349.23,
+            'so': 392.00, 'la': 440.00, 'ti': 493.88, "do'": 523.25
+        };
+
+        // Load settings from localStorage
+        function loadSettings() {
+            try {
+                const saved = localStorage.getItem('solfegeSettings');
+                if (saved) {
+                    const data = JSON.parse(saved);
+                    if (data.enabledNotes) enabledNotes = data.enabledNotes;
+                    if (data.firstNote !== undefined) firstNote = data.firstNote;
+                    if (data.showLabels) showLabels = data.showLabels;
+                }
+            } catch (e) {
+                console.error('Error loading settings:', e);
+            }
+        }
+
+        // Save settings to localStorage
+        function saveSettings() {
+            try {
+                const data = {
+                    enabledNotes: enabledNotes,
+                    firstNote: firstNote,
+                    showLabels: showLabels
+                };
+                localStorage.setItem('solfegeSettings', JSON.stringify(data));
+            } catch (e) {
+                console.error('Error saving settings:', e);
+            }
+        }
+
+        // Generate random pattern
+        function generatePattern() {
+            const enabledList = Object.keys(enabledNotes).filter(note => enabledNotes[note]);
+
+            if (enabledList.length === 0) {
+                // Enable all if none selected
+                Object.keys(enabledNotes).forEach(note => enabledNotes[note] = true);
+                return generatePattern();
+            }
+
+            currentPattern = [];
+
+            // If first note is set and enabled, use it
+            if (firstNote && enabledList.includes(firstNote)) {
+                currentPattern.push(firstNote);
+                for (let i = 0; i < 3; i++) {
+                    currentPattern.push(enabledList[Math.floor(Math.random() * enabledList.length)]);
+                }
+            } else {
+                for (let i = 0; i < 4; i++) {
+                    currentPattern.push(enabledList[Math.floor(Math.random() * enabledList.length)]);
+                }
+            }
+
+            drawStaffAndNotes();
+        }
+
+        // Draw staff and notes on canvas
+        function drawStaffAndNotes() {
+            const canvas = document.getElementById('staffCanvas');
+            const ctx = canvas.getContext('2d');
+
+            // Clear canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            const canvasWidth = canvas.width;
+            const canvasHeight = canvas.height;
+            const staffLeft = 150;
+            const staffRight = canvasWidth - 150;
+            const staffLength = staffRight - staffLeft;
+            const noteRadius = 25;
+
+            // Determine staff configuration
+            const enabledSet = new Set(Object.keys(enabledNotes).filter(n => enabledNotes[n]));
+
+            let staffConfig;
+            const solMiLaOnly = enabledSet.size > 0 && [...enabledSet].every(n => ['so', 'mi', 'la'].includes(n));
+            const pentatonicThreeLine = enabledSet.size > 0 && !solMiLaOnly &&
+                [...enabledSet].every(n => ['so', 'mi', 'la', 're', 'do'].includes(n));
+
+            if (solMiLaOnly) {
+                // Two-line staff
+                const lineSpacing = 50;
+                const solLineY = canvasHeight / 2 - lineSpacing / 2;
+                const miLineY = canvasHeight / 2 + lineSpacing / 2;
+                const laPosY = solLineY - noteRadius;
+
+                staffConfig = {
+                    lines: [['so', solLineY], ['mi', miLineY]],
+                    positions: {
+                        'la': laPosY,
+                        'so': solLineY,
+                        'mi': miLineY
+                    }
+                };
+            } else if (pentatonicThreeLine) {
+                // Three-line staff
+                const lineSpacing = 60;
+                const solLineY = canvasHeight / 2 - lineSpacing;
+                const miLineY = canvasHeight / 2;
+                const doLineY = canvasHeight / 2 + lineSpacing;
+                const laPosY = solLineY - noteRadius;
+                const rePosY = (miLineY + doLineY) / 2;
+
+                staffConfig = {
+                    lines: [['so', solLineY], ['mi', miLineY], ['do', doLineY]],
+                    positions: {
+                        'la': laPosY,
+                        'so': solLineY,
+                        're': rePosY,
+                        'mi': miLineY,
+                        'do': doLineY
+                    }
+                };
+            } else {
+                // Five-line staff
+                const lineSpacing = 40;
+                const tiLineY = canvasHeight / 2 - 2 * lineSpacing;
+                const solLineY = canvasHeight / 2 - lineSpacing;
+                const miLineY = canvasHeight / 2;
+                const doLineY = canvasHeight / 2 + lineSpacing;
+                const laCommaLineY = canvasHeight / 2 + 2 * lineSpacing;
+
+                staffConfig = {
+                    lines: [['ti', tiLineY], ['so', solLineY], ['mi', miLineY],
+                           ['do', doLineY], ['la,', laCommaLineY]],
+                    positions: {
+                        "do'": tiLineY - noteRadius,
+                        'ti': tiLineY,
+                        'la': (tiLineY + solLineY) / 2,
+                        'so': solLineY,
+                        'fa': (solLineY + miLineY) / 2,
+                        'mi': miLineY,
+                        're': (miLineY + doLineY) / 2,
+                        'do': doLineY,
+                        'ti,': (doLineY + laCommaLineY) / 2,
+                        'la,': laCommaLineY,
+                        'so,': laCommaLineY + noteRadius
+                    }
+                };
+            }
+
+            // Draw staff lines
+            ctx.strokeStyle = '#2c3e50';
+            ctx.lineWidth = 3;
+            staffConfig.lines.forEach(([note, y]) => {
+                ctx.beginPath();
+                ctx.moveTo(staffLeft, y);
+                ctx.lineTo(staffRight, y);
+                ctx.stroke();
+            });
+
+            // Draw labels
+            ctx.font = 'bold 18px Arial';
+            ctx.textAlign = 'right';
+            ctx.textBaseline = 'middle';
+
+            Object.entries(staffConfig.positions).forEach(([note, y]) => {
+                if (enabledNotes[note] && showLabels[note]) {
+                    ctx.fillStyle = noteColors[note] || '#2c3e50';
+                    const label = note.includes(',') || note.includes("'") ? note :
+                                 note.charAt(0).toUpperCase() + note.slice(1);
+                    ctx.fillText(label, staffLeft - 60, y);
+                }
+            });
+
+            // Draw notes
+            const noteSpacing = staffLength / 5;
+            notePositions = [];
+
+            currentPattern.forEach((note, i) => {
+                const xPos = staffLeft + noteSpacing * (i + 1);
+                const yPos = staffConfig.positions[note] || canvasHeight / 2;
+                const color = noteColors[note] || '#2c3e50';
+
+                // Draw note circle
+                ctx.fillStyle = color;
+                ctx.strokeStyle = '#2c3e50';
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                ctx.arc(xPos, yPos, noteRadius, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.stroke();
+
+                // Store position for click detection
+                notePositions.push({
+                    note: note,
+                    x: xPos,
+                    y: yPos,
+                    radius: noteRadius
+                });
+            });
+
+            // Draw pattern text
+            if (showNoteNames) {
+                ctx.font = 'bold 28px Arial';
+                ctx.fillStyle = '#34495e';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'alphabetic';
+                ctx.fillText(currentPattern.join(' - '), canvasWidth / 2, canvasHeight - 50);
+            }
+        }
+
+        // Play entire pattern
+        function playPattern() {
+            initAudioContext();
+            const beatDuration = 60.0 / 75.0; // 75 BPM = 0.8 seconds per beat
+
+            currentPattern.forEach((note, i) => {
+                setTimeout(() => playNote(note), i * beatDuration * 1000);
+            });
+        }
+
+        // Play single note
+        function playNote(noteName) {
+            initAudioContext();
+
+            const frequency = noteFrequencies[noteName];
+            if (!frequency) return;
+
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+
+            oscillator.frequency.value = frequency;
+            oscillator.type = 'sine';
+
+            // Envelope
+            const now = audioContext.currentTime;
+            const duration = 0.5;
+            gainNode.gain.setValueAtTime(0, now);
+            gainNode.gain.linearRampToValueAtTime(0.3, now + 0.01); // Attack
+            gainNode.gain.exponentialRampToValueAtTime(0.01, now + duration); // Release
+
+            oscillator.start(now);
+            oscillator.stop(now + duration);
+        }
+
+        // Toggle note names display
+        function toggleNoteNames() {
+            showNoteNames = !showNoteNames;
+            document.getElementById('toggleNamesBtn').textContent =
+                showNoteNames ? 'Hide Names' : 'Show Names';
+            drawStaffAndNotes();
+        }
+
+        // Toggle fullscreen
+        function toggleFullscreen() {
+            isFullscreen = !isFullscreen;
+            const container = document.getElementById('mainContainer');
+
+            if (isFullscreen) {
+                container.classList.add('fullscreen-mode');
+                if (document.documentElement.requestFullscreen) {
+                    document.documentElement.requestFullscreen().catch(err => {
+                        console.log('Fullscreen request failed:', err);
+                    });
+                }
+            } else {
+                container.classList.remove('fullscreen-mode');
+                if (document.exitFullscreen) {
+                    document.exitFullscreen().catch(err => {
+                        console.log('Exit fullscreen failed:', err);
+                    });
+                }
+            }
+        }
+
+        // Canvas click handler
+        document.getElementById('staffCanvas').addEventListener('click', (e) => {
+            const canvas = document.getElementById('staffCanvas');
+            const rect = canvas.getBoundingClientRect();
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+            const x = (e.clientX - rect.left) * scaleX;
+            const y = (e.clientY - rect.top) * scaleY;
+
+            notePositions.forEach(noteInfo => {
+                const dx = x - noteInfo.x;
+                const dy = y - noteInfo.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+
+                if (distance <= noteInfo.radius) {
+                    playNote(noteInfo.note);
+                }
+            });
+        });
+
+        // Modal functions
+        function openNoteSelection() {
+            const checkboxList = document.getElementById('noteCheckboxes');
+            checkboxList.innerHTML = '';
+
+            noteOrder.forEach(note => {
+                const div = document.createElement('div');
+                div.className = 'checkbox-item';
+                div.innerHTML = `
+                    <input type="checkbox" id="note-${note}" ${enabledNotes[note] ? 'checked' : ''}>
+                    <label for="note-${note}">${note}</label>
+                `;
+                checkboxList.appendChild(div);
+            });
+
+            document.getElementById('noteSelectionModal').classList.add('show');
+        }
+
+        function applyNotePreset(notes) {
+            noteOrder.forEach(note => {
+                const checkbox = document.getElementById(`note-${note}`);
+                if (checkbox) {
+                    checkbox.checked = notes.includes(note);
+                }
+            });
+        }
+
+        function saveNoteSelection() {
+            noteOrder.forEach(note => {
+                const checkbox = document.getElementById(`note-${note}`);
+                if (checkbox) {
+                    enabledNotes[note] = checkbox.checked;
+                }
+            });
+            saveSettings();
+            closeModal('noteSelectionModal');
+            generatePattern();
+        }
+
+        function openFirstNoteSelection() {
+            const radioList = document.getElementById('firstNoteRadios');
+            radioList.innerHTML = '';
+
+            // None option
+            const noneDiv = document.createElement('div');
+            noneDiv.className = 'radio-item';
+            noneDiv.innerHTML = `
+                <input type="radio" name="firstNote" id="first-none" value="none"
+                       ${!firstNote ? 'checked' : ''}>
+                <label for="first-none">None (Random)</label>
+            `;
+            radioList.appendChild(noneDiv);
+
+            // Note options
+            noteOrder.forEach(note => {
+                const div = document.createElement('div');
+                div.className = 'radio-item';
+                div.innerHTML = `
+                    <input type="radio" name="firstNote" id="first-${note}" value="${note}"
+                           ${firstNote === note ? 'checked' : ''}>
+                    <label for="first-${note}">${note}</label>
+                `;
+                radioList.appendChild(div);
+            });
+
+            document.getElementById('firstNoteModal').classList.add('show');
+        }
+
+        function saveFirstNote() {
+            const selected = document.querySelector('input[name="firstNote"]:checked');
+            if (selected) {
+                firstNote = selected.value === 'none' ? null : selected.value;
+            }
+            saveSettings();
+            closeModal('firstNoteModal');
+            generatePattern();
+        }
+
+        function openLabelSelection() {
+            const checkboxList = document.getElementById('labelCheckboxes');
+            checkboxList.innerHTML = '';
+
+            noteOrder.forEach(note => {
+                const div = document.createElement('div');
+                div.className = 'checkbox-item';
+                div.innerHTML = `
+                    <input type="checkbox" id="label-${note}" ${showLabels[note] ? 'checked' : ''}>
+                    <label for="label-${note}">${note}</label>
+                `;
+                checkboxList.appendChild(div);
+            });
+
+            document.getElementById('labelSelectionModal').classList.add('show');
+        }
+
+        function applyLabelPreset(note) {
+            noteOrder.forEach(n => {
+                const checkbox = document.getElementById(`label-${n}`);
+                if (checkbox) {
+                    checkbox.checked = (n === note);
+                }
+            });
+        }
+
+        function applyLabelPresetAvailable() {
+            noteOrder.forEach(note => {
+                const checkbox = document.getElementById(`label-${note}`);
+                if (checkbox) {
+                    checkbox.checked = enabledNotes[note];
+                }
+            });
+        }
+
+        function saveLabelSelection() {
+            noteOrder.forEach(note => {
+                const checkbox = document.getElementById(`label-${note}`);
+                if (checkbox) {
+                    showLabels[note] = checkbox.checked;
+                }
+            });
+            saveSettings();
+            closeModal('labelSelectionModal');
+            drawStaffAndNotes();
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.remove('show');
+        }
+
+        // Close modal when clicking outside
+        document.querySelectorAll('.modal').forEach(modal => {
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    modal.classList.remove('show');
+                }
+            });
+        });
+
+        // Handle ESC key to exit fullscreen
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && isFullscreen) {
+                toggleFullscreen();
+            }
+        });
+
+        // Initialize
+        loadSettings();
+        generatePattern();
+    </script>
+</body>
+</html>
